@@ -10,7 +10,7 @@
     },
 
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "git config --global --add safe.directory /workspaces/stader_evidence && rm .vscode/extensions.json && git config user.email 'scottincrypto@gmail.com' && git config user.name 'Scott Simpson'",
+    "postCreateCommand": "git config --global --add safe.directory /workspaces/stader_evidence && git config user.email 'scottincrypto@gmail.com' && git config user.name 'Scott Simpson' && rm .vscode/extensions.json",
     // Configure tool-specific properties
     "customizations": {
       "vscode": {
@@ -22,6 +22,8 @@
       }
     }
     // "forwardPorts": [3000]
+    //Set Environment Vars
+	  , "runArgs": ["--env-file",".devcontainer/devcontainer.env"]
   }
   // For format details, see https://aka.ms/devcontainer.json. For config options, see the
   // README at: https://github.com/devcontainers/templates/tree/main/src/python
