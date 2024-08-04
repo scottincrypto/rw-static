@@ -2,8 +2,6 @@
 title: Stader Treasury by TokenLogic
 ---
 
-## Performance
-
 ```sql current_day
 select
   block_day
@@ -57,7 +55,6 @@ order by block_day desc limit 1
   />
 </Grid>
 
-## Treasury Value
 
 ```sql treasury_charts
 select 
@@ -110,6 +107,17 @@ order by block_day, pool
   y=balance
   chartAreaHeight=400
   title="Treasury Value"
+  echartsOptions={{
+      dataZoom: [
+          {
+              start: 0,
+              end: 100,
+          },
+      ],
+      grid: {
+          bottom: '50px',
+      },
+  }}
 />
 
 
@@ -121,6 +129,17 @@ order by block_day, pool
   chartAreaHeight=400
   title="Treasury Value by Pool"
   legend=false
+  echartsOptions={{
+      dataZoom: [
+          {
+              start: 0,
+              end: 100,
+          },
+      ],
+      grid: {
+          bottom: '50px',
+      },
+  }}
 />
 
 <LineChart
@@ -132,4 +151,15 @@ order by block_day, pool
   title="APR by Pool"
   legend=false
   yFmt='pct1'
+  echartsOptions={{
+      dataZoom: [
+          {
+              start: 0,
+              end: 100,
+          },
+      ],
+      grid: {
+          bottom: '50px',
+      },
+  }}
 />
