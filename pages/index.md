@@ -163,3 +163,5 @@ order by block_day, pool
       },
   }}
 />
+
+<LastRefreshed prefix="Data last updated"/>
