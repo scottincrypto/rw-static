@@ -164,4 +164,25 @@ order by block_day, pool
   }}
 />
 
+
+```sql open_positions
+select distinct 
+  protocol || ' ' || pool as open_pool
+  , '/open_positions/' || protocol || ' ' || pool as open_pool_link
+from tokenlogic_data.pool_returns
+where 1=1
+  and balance > 0
+  and block_day = (select max(block_day) from tokenlogic_data.pool_returns)
+```
+
+{#each open_positions as pos}
+
+- [{pos.open_pool}](/open_positions/{pos.open_pool})
+
+{/each}
+
+<DataTable
+  data={open_positions}
+  link=open_pool_link
+
 <LastRefreshed prefix="Data last updated"/>
