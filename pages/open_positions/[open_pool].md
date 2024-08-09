@@ -89,17 +89,11 @@ where holding_type = 'Rewards'
     fmt='usd0'
   />
 </Grid>
-<Grid cols=3>
+<Grid cols=2>
   <BigValue
     data={pool_current}
     value=pnl
     title="Profit & Loss"
-    fmt='usd0'
-  />
-  <BigValue
-    data={pool_current}
-    value=rewards
-    title="Rewards to be Claimed"
     fmt='usd0'
   />
   <BigValue
@@ -110,12 +104,13 @@ where holding_type = 'Rewards'
   />
 </Grid>
 
+
+## Profit & Loss
 <LineChart
   data={pool_data}
   x=block_day
   y=pnl
   chartAreaHeight=400
-  title="Profit & Loss"
   yFmt='usd0'
   echartsOptions={{
       dataZoom: [
@@ -130,13 +125,13 @@ where holding_type = 'Rewards'
   }}
 />
 
+## Pool Holdings
 <AreaChart
   data={pool_holdings}
   x=block_day
   y=balance
   series=type
   chartAreaHeight=400
-  title="Pool Holdings"
   legend=false
   echartsOptions={{
       dataZoom: [
@@ -151,6 +146,7 @@ where holding_type = 'Rewards'
   }}
 />
 
+## APR
 <LineChart
   data={pool_data}
   x=block_day
@@ -171,6 +167,7 @@ where holding_type = 'Rewards'
   }}
 />
 
+## Rewards
 <AreaChart
   data={pool_rewards}
   x=block_day

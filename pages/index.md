@@ -16,6 +16,8 @@ select
 from tokenlogic_data.treasury_returns
 order by block_day desc limit 1
 ```
+
+## Treasury Performance
 <Grid cols=3>
   <BigValue
     data={current_day}
@@ -56,10 +58,43 @@ order by block_day desc limit 1
 </Grid>
 
 
+```sql open_positions
+select distinct 
+  protocol || ' ' || pool as open_pool
+  , '/open_positions/' || protocol || ' ' || pool as open_pool_link
+  , cumu_invested as invested
+  , balance as total_holdings
+  , pnl as PnL
+  , apr as APR
+from tokenlogic_data.pool_returns
+where 1=1
+  and balance > 0
+  and block_day = (select max(block_day) from tokenlogic_data.pool_returns)
+```
+
+## Open Positions
+
+_Click pool to open position details_
+
+<DataTable
+  data={open_positions}
+  link=open_pool_link
+  >
+  <Column id=open_pool title="Pool"/>
+  <Column id=invested title="Invested" fmt='usd0'/>
+  <Column id=total_holdings title="Total Holdings" fmt='usd0'/>
+  <Column id=PnL title="PnL" fmt='usd0'/>
+  <Column id=APR title="APR" fmt='pct1'/>
+
+</DataTable>
+
+
+
 ```sql treasury_charts
 select 
   block_day
   , balance 
+  , pnl
 from tokenlogic_data.treasury_returns
 order by block_day
 ```
@@ -99,14 +134,13 @@ from tokenlogic_data.treasury_returns
 order by block_day, pool 
 ```
 
-
+## Treasury Value
 
 <LineChart
   data={treasury_charts}
   x=block_day
   y=balance
   chartAreaHeight=400
-  title="Treasury Value"
   echartsOptions={{
       dataZoom: [
           {
@@ -120,6 +154,7 @@ order by block_day, pool
   }}
 />
 
+## Treasury Value by Pool
 
 <AreaChart
   data={pool_charts}
@@ -127,7 +162,6 @@ order by block_day, pool
   y=balance
   series=pool
   chartAreaHeight=400
-  title="Treasury Value by Pool"
   legend=false
   echartsOptions={{
       dataZoom: [
@@ -142,13 +176,34 @@ order by block_day, pool
   }}
 />
 
+## Profit & Loss
+
+<LineChart
+  data={treasury_charts}
+  x=block_day
+  y=pnl
+  chartAreaHeight=400
+  echartsOptions={{
+      dataZoom: [
+          {
+              start: 0,
+              end: 100,
+          },
+      ],
+      grid: {
+          bottom: '50px',
+      },
+  }}
+/>
+
+## APR by Pool
+
 <LineChart
   data={pool_apr}
   x=block_day
   y=apr
   series=pool
   chartAreaHeight=400
-  title="APR by Pool"
   legend=false
   yFmt='pct1'
   echartsOptions={{
@@ -165,24 +220,37 @@ order by block_day, pool
 />
 
 
-```sql open_positions
+```sql closed_positions
 select distinct 
-  protocol || ' ' || pool as open_pool
-  , '/open_positions/' || protocol || ' ' || pool as open_pool_link
+  protocol || ' ' || pool as closed_pool
+  , '/closed_positions/' || protocol || ' ' || pool as closed_pool_link
+  , cumu_invested as invested
+  , cumu_withdrawn as withdrawn
+  , pnl as PnL
+  , apr as APR
+  , block_day as closed_date
 from tokenlogic_data.pool_returns
 where 1=1
-  and balance > 0
-  and block_day = (select max(block_day) from tokenlogic_data.pool_returns)
+  and balance = 0
 ```
 
-{#each open_positions as pos}
+## Closed Positions
 
-- [{pos.open_pool}](/open_positions/{pos.open_pool})
-
-{/each}
+_Click pool to open position details_
 
 <DataTable
-  data={open_positions}
-  link=open_pool_link
+  data={closed_positions}
+  link=closed_pool_link
+  openInNewTab=true
+  >
+  <Column id=closed_pool title="Pool"/>
+  <Column id=invested title="Invested" fmt='usd0'/>
+  <Column id=withdrawn title="Withdrawn" fmt='usd0'/>
+  <Column id=PnL title="PnL" fmt='usd0'/>
+  <Column id=APR title="APR" fmt='pct1'/>
+  <Column id=closed_date title="Closed Date" fmt='yyyy-mm-dd'/>
+
+</DataTable>
+
 
 <LastRefreshed prefix="Data last updated"/>

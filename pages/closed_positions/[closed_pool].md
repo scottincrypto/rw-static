@@ -20,15 +20,19 @@ rewards split by token type
 ```sql pool_current 
 select 
   block_day
+  , protocol || ' ' || pool as protocol_pool
   , pool_balance
   , rewards
   , balance
   , cumu_invested
+  , cumu_withdrawn
   , apr
   , pnl
 from tokenlogic_data.pool_returns
-where pool='Convex Gauge for GHO/fxUSD Curve LP'
-order by block_day desc limit 1
+where 1=1
+  and balance = 0
+  and protocol || ' ' || pool = '${params.closed_pool}'
+
 ```
 
 ```sql pool_data
@@ -41,7 +45,7 @@ select
   , apr
   , pnl
 from tokenlogic_data.pool_returns
-where pool='Convex Gauge for GHO/fxUSD Curve LP'
+where protocol || ' ' || pool = '${params.closed_pool}'
 order by block_day 
 ```
 
@@ -67,35 +71,31 @@ select
   , balance_usd
 from tokenlogic_data.treasury_base
 where holding_type = 'Rewards'
-  and pool='Convex Gauge for GHO/fxUSD Curve LP'
+  and protocol || ' ' || pool = '${params.closed_pool}'
+  and block_day < (select block_day from ${pool_current})
 ```
 
+# {params.closed_pool}
 
 <Grid cols=2>
   <BigValue
     data={pool_current}
     value=cumu_invested
-    title="Total Invested"
+    title="Invested"
     fmt='usd0'
   />
   <BigValue
     data={pool_current}
-    value=balance
-    title="Current Holdings"
+    value=cumu_withdrawn
+    title="Withdrawn"
     fmt='usd0'
   />
 </Grid>
-<Grid cols=3>
+<Grid cols=2>
   <BigValue
     data={pool_current}
     value=pnl
     title="Profit & Loss"
-    fmt='usd0'
-  />
-  <BigValue
-    data={pool_current}
-    value=rewards
-    title="Rewards to be Claimed"
     fmt='usd0'
   />
   <BigValue
@@ -106,12 +106,12 @@ where holding_type = 'Rewards'
   />
 </Grid>
 
+## Profit & Loss
 <LineChart
   data={pool_data}
   x=block_day
   y=pnl
   chartAreaHeight=400
-  title="Profit & Loss"
   yFmt='usd0'
   echartsOptions={{
       dataZoom: [
@@ -126,13 +126,13 @@ where holding_type = 'Rewards'
   }}
 />
 
+## Pool Holdings
 <AreaChart
   data={pool_holdings}
   x=block_day
   y=balance
   series=type
   chartAreaHeight=400
-  title="Pool Holdings"
   legend=false
   echartsOptions={{
       dataZoom: [
@@ -147,12 +147,12 @@ where holding_type = 'Rewards'
   }}
 />
 
+## APR
 <LineChart
   data={pool_data}
   x=block_day
   y=apr
   chartAreaHeight=400
-  title="APR"
   yFmt='pct1'
   echartsOptions={{
       dataZoom: [
@@ -167,13 +167,13 @@ where holding_type = 'Rewards'
   }}
 />
 
+## Rewards
 <AreaChart
   data={pool_rewards}
   x=block_day
   y=balance_usd
   series=symbol
   chartAreaHeight=400
-  title="Unclaimed Rewards"
   legend=false
   echartsOptions={{
       dataZoom: [
