@@ -188,3 +188,5 @@ where holding_type = 'Rewards'
       },
   }}
 />
+
+<LastRefreshed prefix="Data last updated"/>

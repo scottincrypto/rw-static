@@ -26,7 +26,10 @@ select
   , balance
   , cumu_invested
   , cumu_withdrawn
-  , apr
+  , case 
+    when protocol || ' ' || pool = 'Maverick Boosted Position 4' then pnl/cumu_invested/years_invested
+    when protocol || ' ' || pool = 'Gearbox USDC V2 Pool' then pnl/cumu_invested/years_invested
+  	else apr end as apr
   , pnl
 from tokenlogic_data.pool_returns
 where 1=1
@@ -187,3 +190,5 @@ where holding_type = 'Rewards'
       },
   }}
 />
+
+<LastRefreshed prefix="Data last updated"/>
