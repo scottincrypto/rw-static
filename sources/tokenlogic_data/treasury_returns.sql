@@ -1,5 +1,5 @@
 select 
   *
-from datamart_treasury.kelp_treasury_returns
+from datamart_treasury.stader_treasury_returns
 order by block_day
 

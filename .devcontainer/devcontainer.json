@@ -10,7 +10,7 @@
     },
 
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": "git config --global --add safe.directory /workspaces/kelp_evidence && git config user.email 'scottincrypto@gmail.com' && git config user.name 'Scott Simpson' && rm .vscode/extensions.json",
+    "postCreateCommand": "git config --global --add safe.directory /workspaces/stader_evidence && git config user.email 'scottincrypto@gmail.com' && git config user.name 'Scott Simpson' && rm .vscode/extensions.json",
     // Configure tool-specific properties
     "customizations": {
       "vscode": {
