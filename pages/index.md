@@ -1,5 +1,5 @@
 ---
-title: Stader Treasury by TokenLogic
+title: Kelp Treasury by TokenLogic
 ---
 
 ```sql current_day
