@@ -10,6 +10,7 @@ select
   , token_balance
   , balance
   , cumu_invested
+  , cumu_withdrawn
   , apr
   , pnl
   , (balance-token_balance)/balance as funds_allocated
@@ -27,15 +28,15 @@ order by block_day desc limit 1
   />
   <BigValue
     data={current_day}
-    value=balance
-    title="Treasury Value"
+    value=cumu_withdrawn
+    title="Total Withdrawn"
     fmt='usd0'
   />
   <BigValue
     data={current_day}
-    value=funds_allocated
-    title="Funds Allocated"
-    fmt='pct1'
+    value=balance
+    title="Treasury Value"
+    fmt='usd0'
   />
   <BigValue
     data={current_day}
@@ -219,6 +220,37 @@ order by block_day, pool
   }}
 />
 
+## Token Holdings
+
+```sql token_holdings
+select 
+  block_day
+  , symbol
+  , balance_usd
+from tokenlogic_data.treasury_base
+where holding_type = 'Token Holdings'
+order by block_day
+```
+
+<AreaChart
+  data={token_holdings}
+  x=block_day
+  y=balance_usd
+  series=symbol
+  chartAreaHeight=400
+  legend=false
+  echartsOptions={{
+      dataZoom: [
+          {
+              start: 0,
+              end: 100,
+          },
+      ],
+      grid: {
+          bottom: '50px',
+      },
+  }}
+/>
 
 ```sql closed_positions
 select distinct 
