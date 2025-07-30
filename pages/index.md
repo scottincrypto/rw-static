@@ -66,7 +66,9 @@ select distinct
   , cumu_invested as invested
   , balance as total_holdings
   , pnl as PnL
-  , apr as APR
+  , case 
+    when protocol || ' ' || pool = 'Pendle fGHO 2025-07-31' then pnl/cumu_invested/years_invested
+  	else apr end as APR
 from tokenlogic_data.pool_returns
 where 1=1
   and balance > 0
