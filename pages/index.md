@@ -252,6 +252,58 @@ order by block_day
   }}
 />
 
+```sql all_holdings
+select 
+  protocol || ' ' || pool as holding
+  , holding_type
+  , sum(balance_usd) as balance
+  , 1 as sort_order
+from tokenlogic_data.treasury_base
+where 1=1
+ and block_day = (select max(block_day) from tokenlogic_data.treasury_base)
+ and (balance_usd > 1 or balance_usd < -1)
+ and holding_type = 'Pool Deposit'
+group by protocol, pool, holding_type, sort_order
+union all 
+select 
+  protocol || ' ' || pool as holding
+  , 'Unclaimed Rewards' as holding_type
+  , sum(balance_usd) as balance
+  , 2 as sort_order
+from tokenlogic_data.treasury_base
+where 1=1
+ and block_day = (select max(block_day) from tokenlogic_data.treasury_base)
+ and balance_usd > 1
+ and holding_type = 'Rewards'
+ group by protocol, pool, holding_type, sort_order
+ union all 
+select 
+  symbol as holding
+  , 'Token Holdings' as holding_type
+  , sum(balance_usd) as balance
+  , 3 as sort_order
+from tokenlogic_data.treasury_base
+where 1=1
+ and block_day = (select max(block_day) from tokenlogic_data.treasury_base)
+ and balance_usd > 1
+ and holding_type = 'Token Holdings'
+ group by symbol, holding_type, sort_order
+order by sort_order, balance desc
+```
+
+## Detailed Holdings
+
+<DataTable
+  data={all_holdings}
+  totalRow=true
+  rows=20
+  >
+  <Column id=holding_type title="Holding Type"/>
+  <Column id=holding title="Holding"/>  
+  <Column id=balance title="Balance" fmt='usd0'/>
+  
+</DataTable>
+
 ```sql closed_positions
 select distinct 
   protocol || ' ' || pool as closed_pool
@@ -268,6 +320,8 @@ from tokenlogic_data.pool_returns
 where 1=1
   and balance = 0
 ```
+
+
 
 ## Closed Positions
 
