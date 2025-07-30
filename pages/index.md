@@ -256,6 +256,7 @@ order by block_day
 select 
   protocol || ' ' || pool as holding
   , holding_type
+  , null as symbol
   , sum(balance_usd) as balance
   , 1 as sort_order
 from tokenlogic_data.treasury_base
@@ -268,6 +269,7 @@ union all
 select 
   protocol || ' ' || pool as holding
   , 'Unclaimed Rewards' as holding_type
+  , symbol
   , sum(balance_usd) as balance
   , 2 as sort_order
 from tokenlogic_data.treasury_base
@@ -275,11 +277,12 @@ where 1=1
  and block_day = (select max(block_day) from tokenlogic_data.treasury_base)
  and balance_usd > 1
  and holding_type = 'Rewards'
- group by protocol, pool, holding_type, sort_order
+ group by protocol, pool, holding_type, symbol, sort_order
  union all 
 select 
-  symbol as holding
+  'Token' as holding
   , 'Token Holdings' as holding_type
+  , symbol
   , sum(balance_usd) as balance
   , 3 as sort_order
 from tokenlogic_data.treasury_base
@@ -287,7 +290,7 @@ where 1=1
  and block_day = (select max(block_day) from tokenlogic_data.treasury_base)
  and balance_usd > 1
  and holding_type = 'Token Holdings'
- group by symbol, holding_type, sort_order
+ group by holding, symbol, holding_type, sort_order
 order by sort_order, balance desc
 ```
 
@@ -300,6 +303,7 @@ order by sort_order, balance desc
   >
   <Column id=holding_type title="Holding Type"/>
   <Column id=holding title="Holding"/>  
+  <Column id=symbol title="Symbol"/>
   <Column id=balance title="Balance" fmt='usd0'/>
   
 </DataTable>
