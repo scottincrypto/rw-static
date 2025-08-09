@@ -230,6 +230,7 @@ select distinct
     , case 
     when protocol || ' ' || pool = 'Maverick Boosted Position 4' then pnl/cumu_invested/years_invested
     when protocol || ' ' || pool = 'Gearbox USDC V2 Pool' then pnl/cumu_invested/years_invested
+    when protocol || ' ' || pool = 'Pendle fGHO 2025-07-31' then pnl/cumu_invested/years_invested
   	else apr end as APR
   , block_day as closed_date
 from tokenlogic_data.pool_returns
