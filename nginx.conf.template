@@ -8,6 +8,13 @@ http {
   include       /etc/nginx/mime.types;
   default_type  application/octet-stream;
 
+  # Add MIME type for Arrow files
+  types {
+    application/vnd.apache.arrow-file arrow;
+    application/octet-stream parquet;
+    application/octet-stream duckdb;
+  }
+
   # Optimize file serving
   sendfile        on;
   tcp_nopush      on;
@@ -15,7 +22,7 @@ http {
   keepalive_timeout  65;
   types_hash_max_size 2048;
 
-  # Gzip compression
+  # Gzip compression (but exclude binary formats)
   gzip on;
   gzip_vary on;
   gzip_min_length 1024;
@@ -55,6 +62,43 @@ http {
     root /usr/share/nginx/html;
     index index.html index.htm;
 
+    # CRITICAL: Handle Evidence API routes (must come before auth)
+    location /api/ {
+        # No auth for API endpoints
+        auth_basic off;
+        
+        # Try to serve the file directly, fallback to index.html
+        try_files $uri $uri/ @fallback;
+        
+        # Required headers for DuckDB
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Cache-Control "no-cache, must-revalidate" always;
+    }
+
+    # Handle .arrow files specifically
+    location ~* \.arrow$ {
+        auth_basic off;
+        
+        # Ensure correct MIME type
+        add_header Content-Type "application/vnd.apache.arrow-file" always;
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
+    # Handle worker files
+    location ~* \.(worker\.js|worker-.*\.js)$ {
+        auth_basic off;
+        
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+    }
+
     # Main location block for serving static files
     location / {
         # Basic authentication
@@ -74,12 +118,20 @@ http {
         add_header Referrer-Policy "no-referrer-when-downgrade" always;
         
         # Updated CSP to allow WebAssembly and workers
-        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src 'self' *" always;
+    }
+
+    # Fallback for client-side routing
+    location @fallback {
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        
+        rewrite ^.*$ /index.html last;
     }
 
     # Cache static assets - EXCLUDE from auth for manifest
     location ~* \.(webmanifest|json)$ {
-        # Remove auth for manifest files to prevent 401
+        # Remove auth for manifest files
         auth_basic off;
         
         expires 1d;
@@ -102,13 +154,13 @@ http {
     }
     
     # Ensure parquet and data files are accessible
-    location ~* \.(parquet|arrow|db|duckdb)$ {
-        auth_basic "Restricted";
-        auth_basic_user_file /etc/nginx/.htpasswd;
+    location ~* \.(parquet|db|duckdb)$ {
+        auth_basic off;  # Remove auth for data files
         
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Cache-Control "public";
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Cache-Control "public, max-age=3600" always;
         access_log off;
     }
 
