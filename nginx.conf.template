@@ -62,109 +62,63 @@ http {
     root /usr/share/nginx/html;
     index index.html index.htm;
 
-    # CRITICAL: Handle Evidence API routes (must come before auth)
-    location /api/ {
-        # No auth for API endpoints
-        auth_basic off;
+    # CRITICAL: Set global headers for SharedArrayBuffer support
+    # These MUST be set at server level for consistency
+    more_set_headers 'Cross-Origin-Embedder-Policy: require-corp';
+    more_set_headers 'Cross-Origin-Opener-Policy: same-origin';
+
+    # Main location block - NO AUTH for now to test
+    location / {
+        try_files $uri $uri/ /index.html;
         
-        # Try to serve the file directly, fallback to index.html
-        try_files $uri $uri/ @fallback;
-        
-        # Required headers for DuckDB
+        # Required headers for DuckDB/Evidence
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
-        add_header Cache-Control "no-cache, must-revalidate" always;
+        
+        # Permissive CSP for Evidence/DuckDB
+        add_header Content-Security-Policy "default-src * data: blob: filesystem: about: ws: wss: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; script-src * data: blob: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src * blob: data: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src * data: blob: 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src * data: blob: ; style-src * data: blob: 'unsafe-inline'; font-src * data: blob: 'unsafe-inline';" always;
+        
+        # Other security headers
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
     }
 
-    # Handle .arrow files specifically
-    location ~* \.arrow$ {
-        auth_basic off;
-        
-        # Ensure correct MIME type
-        add_header Content-Type "application/vnd.apache.arrow-file" always;
-        add_header Cross-Origin-Embedder-Policy "require-corp" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Cache-Control "public, max-age=3600" always;
-    }
-
-    # Handle worker files
-    location ~* \.(worker\.js|worker-.*\.js)$ {
-        auth_basic off;
-        
+    # Specific handling for worker files
+    location ~ worker.*\.js$ {
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
         add_header Cache-Control "public, max-age=31536000, immutable" always;
+        
+        # Ensure JS MIME type
+        add_header Content-Type "application/javascript" always;
     }
 
-    # Main location block for serving static files
-    location / {
-        # Basic authentication
-        auth_basic "Restricted";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-        
-        try_files $uri $uri/ /index.html;
-        
-        # CRITICAL: Add these headers for DuckDB/Evidence to work
+    # API and data files
+    location ~ \.(arrow|parquet|duckdb|db)$ {
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        
-        # Security headers
-        add_header X-Frame-Options "SAMEORIGIN" always;
-        add_header X-XSS-Protection "1; mode=block" always;
-        add_header X-Content-Type-Options "nosniff" always;
-        add_header Referrer-Policy "no-referrer-when-downgrade" always;
-        
-        # Updated CSP to allow WebAssembly and workers
-        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; connect-src 'self' *" always;
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "*" always;
+        add_header Cache-Control "public, max-age=3600" always;
     }
 
-    # Fallback for client-side routing
-    location @fallback {
-        auth_basic "Restricted";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-        
-        rewrite ^.*$ /index.html last;
-    }
-
-    # Cache static assets - EXCLUDE from auth for manifest
-    location ~* \.(webmanifest|json)$ {
-        # Remove auth for manifest files
-        auth_basic off;
-        
-        expires 1d;
-        add_header Cache-Control "public";
+    # Manifest and JSON files
+    location ~ \.(webmanifest|json)$ {
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        access_log off;
+        add_header Cache-Control "public, max-age=86400" always;
     }
-    
-    # Cache other static assets
+
+    # Static assets
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        auth_basic "Restricted";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-        
         expires 1y;
         add_header Cache-Control "public, immutable";
         add_header Cross-Origin-Embedder-Policy "require-corp" always;
         add_header Cross-Origin-Opener-Policy "same-origin" always;
-        access_log off;
-    }
-    
-    # Ensure parquet and data files are accessible
-    location ~* \.(parquet|db|duckdb)$ {
-        auth_basic off;  # Remove auth for data files
-        
-        add_header Cross-Origin-Embedder-Policy "require-corp" always;
-        add_header Cross-Origin-Opener-Policy "same-origin" always;
-        add_header Access-Control-Allow-Origin "*" always;
-        add_header Cache-Control "public, max-age=3600" always;
-        access_log off;
     }
 
-    # Deny access to hidden files
+    # Deny hidden files
     location ~ /\. {
         deny all;
         access_log off;
