@@ -55,32 +55,59 @@ http {
     root /usr/share/nginx/html;
     index index.html index.htm;
 
-    # Basic authentication for all locations
-    auth_basic "Restricted";
-    auth_basic_user_file /etc/nginx/.htpasswd;
-
     # Main location block for serving static files
     location / {
+        # Basic authentication
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        
         try_files $uri $uri/ /index.html;
+        
+        # CRITICAL: Add these headers for DuckDB/Evidence to work
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
         
         # Security headers
         add_header X-Frame-Options "SAMEORIGIN" always;
         add_header X-XSS-Protection "1; mode=block" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header Referrer-Policy "no-referrer-when-downgrade" always;
-        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+        
+        # Updated CSP to allow WebAssembly and workers
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'" always;
     }
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+    # Cache static assets - EXCLUDE from auth for manifest
+    location ~* \.(webmanifest|json)$ {
+        # Remove auth for manifest files to prevent 401
+        auth_basic off;
+        
+        expires 1d;
+        add_header Cache-Control "public";
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
         access_log off;
     }
-
-    # Handle manifest and other special files
-    location ~* \.(webmanifest|json)$ {
-        expires 1d;
+    
+    # Cache other static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
+        access_log off;
+    }
+    
+    # Ensure parquet and data files are accessible
+    location ~* \.(parquet|arrow|db|duckdb)$ {
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+        
+        add_header Cross-Origin-Embedder-Policy "require-corp" always;
+        add_header Cross-Origin-Opener-Policy "same-origin" always;
         add_header Cache-Control "public";
         access_log off;
     }
