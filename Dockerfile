@@ -2,18 +2,28 @@ FROM nginx:alpine
 COPY build /usr/share/nginx/html
 
 # configure nginx
-# ARG PROXY_PASS=http://host.docker.internal:3000
-# ARG PORT=4000
 ARG USERNAME=user
 ARG PASSWORD=password
-
-# RUN echo "proxy_pass: $PROXY_PASS\nport: $PORT\nusername: $USERNAME\npassword: $PASSWORD"
-
-
-# RUN envsubst '$PROXY_PASS $PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+ARG PORT=80
 
 ENV USERNAME=$USERNAME
 ENV PASSWORD=$PASSWORD
+ENV PORT=$PORT
+
+# Copy nginx config template and generate final config
+COPY ./nginx.conf.template /etc/nginx/nginx.conf.template
+RUN envsubst '$PORT' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+
+# Copy password generation script
 COPY ./gen_passwd.sh /etc/nginx/gen_passwd.sh
 RUN ["chmod", "+x", "/etc/nginx/gen_passwd.sh"]
+
+# Generate password file
 RUN /etc/nginx/gen_passwd.sh
+
+# Expose the port
+EXPOSE $PORT
+
+# Start nginx directly
+CMD ["nginx", "-g", "daemon off;"]
+
