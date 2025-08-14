@@ -1,0 +1,52 @@
+<!-- test.html - place in /usr/share/nginx/html/ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SharedArrayBuffer Test</title>
+</head>
+<body>
+    <h1>Testing SharedArrayBuffer</h1>
+    <div id="result"></div>
+    <script>
+        const result = document.getElementById('result');
+        
+        // Test SharedArrayBuffer
+        if (typeof SharedArrayBuffer !== 'undefined') {
+            result.innerHTML = '✅ SharedArrayBuffer is available<br>';
+            console.log('SharedArrayBuffer is available');
+            
+            // Try to create one
+            try {
+                const sab = new SharedArrayBuffer(1024);
+                result.innerHTML += '✅ Can create SharedArrayBuffer<br>';
+            } catch(e) {
+                result.innerHTML += '❌ Cannot create SharedArrayBuffer: ' + e.message + '<br>';
+            }
+        } else {
+            result.innerHTML = '❌ SharedArrayBuffer is NOT available<br>';
+            console.error('SharedArrayBuffer is NOT available');
+        }
+        
+        // Test crossOriginIsolated
+        result.innerHTML += 'crossOriginIsolated: ' + self.crossOriginIsolated + '<br>';
+        
+        // Test worker
+        try {
+            const workerCode = `
+                self.onmessage = function(e) {
+                    console.log('Worker received:', e.data);
+                    self.postMessage('Worker response');
+                }
+            `;
+            const blob = new Blob([workerCode], {type: 'application/javascript'});
+            const worker = new Worker(URL.createObjectURL(blob));
+            worker.onmessage = function(e) {
+                result.innerHTML += '✅ Worker communication successful<br>';
+            };
+            worker.postMessage('test');
+        } catch(e) {
+            result.innerHTML += '❌ Worker creation failed: ' + e.message + '<br>';
+        }
+    </script>
+</body>
+</html>

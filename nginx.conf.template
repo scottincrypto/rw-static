@@ -62,11 +62,6 @@ http {
     root /usr/share/nginx/html;
     index index.html index.htm;
 
-    # CRITICAL: Set global headers for SharedArrayBuffer support
-    # These MUST be set at server level for consistency
-    more_set_headers 'Cross-Origin-Embedder-Policy: require-corp';
-    more_set_headers 'Cross-Origin-Opener-Policy: same-origin';
-
     # Main location block - NO AUTH for now to test
     location / {
         try_files $uri $uri/ /index.html;
