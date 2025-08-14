@@ -1,0 +1,97 @@
+worker_processes 1;
+
+daemon off;
+
+events {
+  worker_connections 1024;
+}
+
+http {
+  include       /etc/nginx/mime.types;
+  default_type  application/octet-stream;
+
+  # Optimize file serving
+  sendfile        on;
+  tcp_nopush      on;
+  tcp_nodelay     on;
+  keepalive_timeout  65;
+  types_hash_max_size 2048;
+
+  # Gzip compression
+  gzip on;
+  gzip_vary on;
+  gzip_min_length 1024;
+  gzip_proxied any;
+  gzip_comp_level 6;
+  gzip_types
+    application/atom+xml
+    application/javascript
+    application/json
+    application/ld+json
+    application/manifest+json
+    application/rss+xml
+    application/vnd.geo+json
+    application/vnd.ms-fontobject
+    application/x-font-ttf
+    application/x-web-app-manifest+json
+    application/xhtml+xml
+    application/xml
+    font/opentype
+    image/bmp
+    image/svg+xml
+    image/x-icon
+    text/cache-manifest
+    text/css
+    text/plain
+    text/vcard
+    text/vnd.rim.location.xloc
+    text/vtt
+    text/x-component
+    text/x-cross-domain-policy;
+
+  server {
+    listen ${PORT};
+    server_name _;
+    
+    # Document root
+    root /usr/share/nginx/html;
+    index index.html index.htm;
+
+    # Basic authentication for all locations
+    auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    # Main location block for serving static files
+    location / {
+        try_files $uri $uri/ /index.html;
+        
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "no-referrer-when-downgrade" always;
+        add_header Content-Security-Policy "default-src 'self' http: https: data: blob: 'unsafe-inline'" always;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
+    # Handle manifest and other special files
+    location ~* \.(webmanifest|json)$ {
+        expires 1d;
+        add_header Cache-Control "public";
+        access_log off;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+  }
+}
