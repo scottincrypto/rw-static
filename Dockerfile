@@ -1,4 +1,8 @@
 FROM nginx:alpine
+
+# Install openssl for password generation
+RUN apk add --no-cache openssl
+
 COPY build /usr/share/nginx/html
 
 # configure nginx
